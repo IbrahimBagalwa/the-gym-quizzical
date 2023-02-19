@@ -26,7 +26,7 @@ These exercises will help you apply the basic concepts of React through tiny pro
 
 ### Links
 
-- Live Site URL Open [Challenge](https://dev--classy-lolly-263813.netlify.app/) with your browser to see the result.
+- Live Site URL Open [Challenge](https://jazzy-brioche-c63240.netlify.app/) with your browser to see the result.
 
 ## My process
 
