@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AnswerCard from "./AnswerCard";
 
 export default function QuestionCard({
   question,
   onSelectAnswer,
-  isChecked,
   questionIndex,
 }) {
   const [selectedAnswer, setSelectedAnswer] = useState("");
