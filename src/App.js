@@ -1,24 +1,42 @@
-import logo from './logo.svg';
-import './App.css';
+import { createContext, useContext, useState } from "react";
+import GameRoom from "./components/GameRoom";
+import Starter from "./components/Starter";
+
+const Contex = createContext({ isChecked: false, setIsChecked: () => null });
+export const useCheckResult = () => useContext(Contex);
+
+function CheckProvider({ children }) {
+  const [isChecked, setIsChecked] = useState(false);
+  return (
+    <Contex.Provider value={{ isChecked, setIsChecked }}>
+      {children}
+    </Contex.Provider>
+  );
+}
 
 function App() {
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const onStartGame = () => {
+    setIsGameStarted(true);
+  };
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <CheckProvider>
+      <div className="w-full h-screen bg-primary-100">
+        <img
+          className="w-64 h-64 absolute bottom-0"
+          src="/blob 5.png"
+          alt="blob1"
+        />
+        <img
+          className="w-64 h-64 absolute top-0 right-0"
+          src="/blobtop.png"
+          alt="blob2"
+        />
+        <div className="flex justify-center items-center h-full w-full">
+          {isGameStarted ? <GameRoom /> : <Starter onClick={onStartGame} />}
+        </div>
+      </div>
+    </CheckProvider>
   );
 }
 
