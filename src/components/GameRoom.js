@@ -5,7 +5,6 @@ import { API_URL } from "./helpers/constants";
 import shuffle from "./helpers/shuffle";
 import QuestionCard from "./QuestionCard";
 import Spinner from "./Spinner";
-// import useWindowSize from "react-use";
 
 function GameRoom() {
   const [games, setGames] = useState([]);
@@ -42,7 +41,7 @@ function GameRoom() {
       setIsChecked(false);
       setWon(false);
     }
-  }, []);
+  }, [setIsChecked]);
 
   useEffect(() => {
     const resizer = (e) => {
