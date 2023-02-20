@@ -4,6 +4,7 @@ import { useCheckResult } from "../App";
 import { API_URL } from "./helpers/constants";
 import shuffle from "./helpers/shuffle";
 import QuestionCard from "./QuestionCard";
+import Score from "./Score";
 import Spinner from "./Spinner";
 
 function GameRoom() {
@@ -12,12 +13,12 @@ function GameRoom() {
   const [fetchGameFailed, setFetchGameFailed] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState("");
   const { setIsChecked, isChecked } = useCheckResult();
-  const [won, setWon] = useState(false);
   const [dimensions, setDimensions] = useState({
     height: window.innerHeight,
     with: window.innerWidth,
   });
-
+  const [isSubmited, setIsSubmited] = useState(false);
+  const [score, setScore] = useState(0);
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -29,17 +30,35 @@ function GameRoom() {
           correct_answer,
         ]);
       });
-      setGames(data.results);
+      setGames(() =>
+        data.results.map((q) => ({
+          question: q.question,
+          answers: [
+            ...q.incorrect_answers.map((a) => ({
+              isHeld: false,
+              isCorrect: false,
+              value: a,
+            })),
+            ...(Array.isArray(q.correct_answer)
+              ? q.correct_answer
+              : [q.correct_answer]
+            ).map((a) => ({
+              isHeld: false,
+              isCorrect: true,
+              value: a,
+            })),
+          ],
+        }))
+      );
       setIsLoading(false);
       setIsChecked(false);
       setSelectedAnswers([]);
-      setWon(false);
+      setIsSubmited(false);
     } catch (err) {
       setFetchGameFailed(true);
       setSelectedAnswers([]);
       setIsLoading(false);
       setIsChecked(false);
-      setWon(false);
     }
   }, [setIsChecked]);
 
@@ -52,32 +71,45 @@ function GameRoom() {
     };
     window.addEventListener("resize", resizer);
     return () => {
+      setScore(0);
       window.removeEventListener("resize", resizer);
     };
   }, []);
+  useEffect(() => {
+    if (
+      games.filter(({ answers }) => {
+        const v = answers.filter((a) => a.isHeld);
+        return v.length > 0;
+      }).length > 0
+    )
+      setSelectedAnswers(true);
+    else setSelectedAnswers(false);
+  }, [games]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  function onSelectAnswer(answer) {
-    setSelectedAnswers((prev) => [...prev, { answer }]);
+  function onSelectAnswer(id, answerId) {
+    const qs = [...games];
+    const answers = qs[id].answers.map((a) => {
+      if (a.isHeld) return { ...a, isHeld: false };
+      else return a;
+    });
+    answers[answerId] = {
+      ...answers[answerId],
+      isHeld: !answers[answerId].isHeld,
+    };
+    qs[id].answers = answers;
+    setGames((prev) => qs);
   }
 
   function checkForWinning() {
-    let isWining = false;
-    selectedAnswers.forEach(({ answer: { answer, questionIndex } }) => {
-      games.forEach(({ correct_answer }, index) => {
-        if (questionIndex === index) {
-          if (answer !== correct_answer) {
-            isWining = false;
-            return;
-          }
-          isWining = true;
-        }
-      });
+    const b = games.filter((g) => {
+      const a = g.answers.filter((a) => a.isCorrect && a.isHeld);
+      return a.length > 0;
     });
-    setWon(isWining);
+    setScore(b.length);
   }
 
   if (fetchGameFailed && !isLoading) {
@@ -95,25 +127,37 @@ function GameRoom() {
           <Spinner />
         ) : (
           <div>
-            {won && (
+            {score > 1 && (
               <div className="w-fit mx-auto">
                 <Confetti width={dimensions.with} height={dimensions.height} />
               </div>
             )}
-            {games.map((question, index) => {
+            {games.map(({ question, answers }, index) => {
               return (
                 <div key={index} className="mb-5">
                   <QuestionCard
                     question={question}
                     onSelectAnswer={onSelectAnswer}
                     questionIndex={index}
+                    answers={answers}
+                    isSubmited={isSubmited}
                   />
                 </div>
               );
             })}
-            {isChecked ? (
+            {isSubmited ? (
+              <Score
+                games={games}
+                score={score}
+                onClick={() => {
+                  setScore(0);
+                  fetchData();
+                }}
+              />
+            ) : isChecked ? (
               <button
                 onClick={() => {
+                  setScore(0);
                   fetchData();
                 }}
                 className="bg-primary-500 text-white text-xl px-5 py-2 rounded-lg font-karla"
@@ -123,15 +167,18 @@ function GameRoom() {
             ) : (
               <button
                 onClick={() => {
-                  if (!selectedAnswers.length) fetchData();
-                  else {
+                  if (!selectedAnswers) {
+                    setScore(0);
+                    fetchData();
+                  } else {
                     setIsChecked(true);
                     checkForWinning();
+                    setIsSubmited(true);
                   }
                 }}
                 className="bg-primary-500 text-white text-xl px-5 py-2 rounded-lg font-karla"
               >
-                {!selectedAnswers.length ? "Load new questions" : "Check"}
+                {selectedAnswers ? "Check answers" : "Load new questions"}
               </button>
             )}
           </div>
